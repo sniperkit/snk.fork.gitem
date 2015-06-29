@@ -45,51 +45,6 @@ func execGitCommand(index, total int, dirPath, gitUrl string, args ...string) er
 	return err
 }
 
-func main() {
-	var debug bool
-	var userName, password, githubOrgName, rootPath string
-	flag.BoolVar(&debug, "debug", false, "Print debug logging information")
-	flag.StringVar(&rootPath, "rootPath", "", "Root path containing checked out subdirectories")
-	flag.StringVar(&userName, "username", "", "Username")
-	flag.StringVar(&password, "password", "", "Password")
-	flag.StringVar(&githubOrgName, "githubOrg", "", "Git organization name")
-	flag.Parse()
-
-	if rootPath == "" {
-		log.Fatal(errors.New("rootPath must be specified"))
-	}
-
-	if userName == "" {
-		log.Fatal(errors.New("username must be specified"))
-	}
-
-	if password == "" {
-		log.Fatal(errors.New("password must be specified"))
-	}
-
-	if githubOrgName == "" {
-		log.Fatal(errors.New("Github orgname must be specified"))
-	}
-
-	// Fetch the initial set of repos and continue until no more links are returned.
-	url := fmt.Sprintf("https://api.github.com/orgs/%s/repos?per_page=200&type=all", githubOrgName)
-	var aggregatedResponse ReposResponse
-	for nextPage := url; nextPage != ""; {
-		var response ReposResponse
-		var err error
-		nextPage, response, err = fetchRepos(debug, nextPage, userName, password)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		aggregatedResponse = append(aggregatedResponse, response...)
-	}
-
-	if err := processResponse(aggregatedResponse, githubOrgName, rootPath); err != nil {
-		log.Fatal(err)
-	}
-}
-
 func fetchRepos(debug bool, url, userName, password string) (nextPage string, response ReposResponse, err error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -138,16 +93,56 @@ func fetchRepos(debug bool, url, userName, password string) (nextPage string, re
 	return nextPage, response, err
 }
 
+func main() {
+	var debug bool
+	var userName, password, githubOrgName, rootPath string
+	flag.BoolVar(&debug, "debug", false, "Print debug logging information")
+	flag.StringVar(&rootPath, "rootPath", "", "Root path containing checked out subdirectories")
+	flag.StringVar(&userName, "username", "", "Username")
+	flag.StringVar(&password, "password", "", "Password")
+	flag.StringVar(&githubOrgName, "githubOrg", "", "Git organization name")
+	flag.Parse()
+
+	if rootPath == "" {
+		log.Fatal(errors.New("rootPath must be specified"))
+	}
+
+	if userName == "" {
+		log.Fatal(errors.New("username must be specified"))
+	}
+
+	if password == "" {
+		log.Fatal(errors.New("password must be specified"))
+	}
+
+	if githubOrgName == "" {
+		log.Fatal(errors.New("Github orgname must be specified"))
+	}
+
+	// Fetch the initial set of repos and continue until no more links are returned.
+	url := fmt.Sprintf("https://api.github.com/orgs/%s/repos?per_page=200&type=all", githubOrgName)
+	var aggregatedResponse ReposResponse
+	for nextPage := url; nextPage != ""; {
+		var response ReposResponse
+		var err error
+		nextPage, response, err = fetchRepos(debug, nextPage, userName, password)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		aggregatedResponse = append(aggregatedResponse, response...)
+	}
+
+	if err := processResponse(aggregatedResponse, githubOrgName, rootPath); err != nil {
+		log.Fatal(err)
+	}
+}
+
 func processResponse(response ReposResponse, githubOrgName, rootPath string) error {
 	log.Printf("Processing %d repos for org %s\n", len(response), githubOrgName)
 	total := len(response)
 	for index, e := range response {
 		gitUrl := e["clone_url"].(string)
-		size := e["size"]
-		if size.(float64) == 0 {
-			log.Printf("%d/%d Skipping %s as it is empty.\n", index, total, gitUrl)
-			continue
-		}
 
 		if !strings.HasSuffix(gitUrl, ".git") {
 			log.Fatal(errors.New("Missing '.git' from URL.."))
@@ -165,12 +160,12 @@ func processResponse(response ReposResponse, githubOrgName, rootPath string) err
 			// Doesn't exist, checkout
 			err := execGitCommand(index, total, rootPath, gitUrl, "clone", gitUrl)
 			if err != nil {
-				return err
+				log.Println(err)
 			}
 		} else if fi.IsDir() {
 			err := execGitCommand(index, total, dirPath, gitUrl, "pull", "origin")
 			if err != nil {
-				return err
+				log.Println(err)
 			}
 		} else {
 			log.Fatal(errors.New("Expected directory"))
