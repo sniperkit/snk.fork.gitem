@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/golang/gddo/httputil/header"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -44,7 +46,9 @@ func execGitCommand(index, total int, dirPath, gitUrl string, args ...string) er
 }
 
 func main() {
+	var debug bool
 	var userName, password, githubOrgName, rootPath string
+	flag.BoolVar(&debug, "debug", false, "Print debug logging information")
 	flag.StringVar(&rootPath, "rootPath", "", "Root path containing checked out subdirectories")
 	flag.StringVar(&userName, "username", "", "Username")
 	flag.StringVar(&password, "password", "", "Password")
@@ -67,10 +71,29 @@ func main() {
 		log.Fatal(errors.New("Github orgname must be specified"))
 	}
 
-	url := fmt.Sprintf("https://api.github.com/orgs/%s/repos?per_page=200", githubOrgName)
+	// Fetch the initial set of repos and continue until no more links are returned.
+	url := fmt.Sprintf("https://api.github.com/orgs/%s/repos?per_page=200&type=all", githubOrgName)
+	var aggregatedResponse ReposResponse
+	for nextPage := url; nextPage != ""; {
+		var response ReposResponse
+		var err error
+		nextPage, response, err = fetchRepos(debug, nextPage, userName, password)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		aggregatedResponse = append(aggregatedResponse, response...)
+	}
+
+	if err := processResponse(aggregatedResponse, githubOrgName, rootPath); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func fetchRepos(debug bool, url, userName, password string) (nextPage string, response ReposResponse, err error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 
 	req.SetBasicAuth(userName, password)
@@ -78,27 +101,41 @@ func main() {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		log.Fatal(resp.Status)
+		err = errors.New(resp.Status)
+		return
+	}
+
+	params := header.ParseList(resp.Header, "Link")
+	if len(params) > 0 {
+		for _, param := range params {
+			if strings.Index(param, "rel=\"next\"") != -1 {
+				s, e := strings.Index(param, "<"), strings.Index(param, ">")
+				if s != -1 && e != -1 {
+					nextPage = param[s+1 : e]
+				}
+			}
+		}
 	}
 
 	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 
-	var response ReposResponse
-	if err = json.Unmarshal(respBody, &response); err != nil {
-		log.Fatal(err)
+	if debug {
+		var out bytes.Buffer
+		json.Indent(&out, respBody, "", "\t")
+		out.WriteTo(os.Stdout)
 	}
 
-	if err = processResponse(response, githubOrgName, rootPath); err != nil {
-		log.Fatal(err)
-	}
+	err = json.Unmarshal(respBody, &response)
+
+	return nextPage, response, err
 }
 
 func processResponse(response ReposResponse, githubOrgName, rootPath string) error {
@@ -108,7 +145,7 @@ func processResponse(response ReposResponse, githubOrgName, rootPath string) err
 		gitUrl := e["clone_url"].(string)
 		size := e["size"]
 		if size.(float64) == 0 {
-			log.Printf("Skipping %s as it is empty.\n", gitUrl)
+			log.Printf("%d/%d Skipping %s as it is empty.\n", index, total, gitUrl)
 			continue
 		}
 
