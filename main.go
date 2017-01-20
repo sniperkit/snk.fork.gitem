@@ -6,7 +6,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/golang/gddo/httputil/header"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -14,6 +13,8 @@ import (
 	"os/exec"
 	"strings"
 	"syscall"
+
+	"github.com/golang/gddo/httputil/header"
 )
 
 type ReposResponse []map[string]interface{}
