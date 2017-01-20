@@ -106,12 +106,13 @@ func (a ByRepoURL) Less(i, j int) bool { return *a[i].URL < *a[j].URL }
 
 func main() {
 	var debug bool
-	var userName, password, githubOrgName, rootPath string
+	var accessToken, userName, password, orgName, rootPath string
 	flag.BoolVar(&debug, "debug", false, "Print debug logging information")
 	flag.StringVar(&rootPath, "rootPath", "", "Root path containing checked out subdirectories")
 	flag.StringVar(&userName, "username", "", "Username")
 	flag.StringVar(&password, "password", "", "Password")
-	flag.StringVar(&githubOrgName, "githubOrg", "", "Git organization name")
+	flag.StringVar(&orgName, "org", "", "git organization name")
+	flag.StringVar(&accessToken, "accessToken", "", "git access token")
 	flag.Parse()
 
 	log.SetFlags(log.Flags() | log.Lshortfile)
@@ -128,12 +129,12 @@ func main() {
 		log.Fatal(errors.New("password must be specified"))
 	}
 
-	if githubOrgName == "" {
+	if orgName == "" {
 		log.Fatal(errors.New("Github orgname must be specified"))
 	}
 
 	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: "142d328e59a56d3cdea11b51e5a0d9cf711042e3"},
+		&oauth2.Token{AccessToken: accessToken},
 	)
 	tc := oauth2.NewClient(oauth2.NoContext, ts)
 
@@ -144,7 +145,7 @@ func main() {
 	allRepos := []*github.Repository{}
 	client := github.NewClient(tc)
 	for {
-		repos, resp, err := client.Repositories.ListByOrg(githubOrgName, opt)
+		repos, resp, err := client.Repositories.ListByOrg(orgName, opt)
 		if err != nil {
 			log.Fatal(err)
 		}
