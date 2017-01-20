@@ -11,3 +11,8 @@ import:
 - package: golang.org/x/net
   subpackages:
   - context
+- package: gopkg.in/src-d/go-git.v4
+  version: ^4.0.0-rc7
+- package: github.com/sergi/go-diff
+  subpackages:
+  - diffmatchpatch/...

@@ -1,102 +1,104 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
+	//"bytes"
+	//"encoding/json"
 	"errors"
 	"flag"
-	"fmt"
-	"io/ioutil"
+	//"fmt"
+	//"io/ioutil"
 	"log"
-	"net/http"
-	"os"
-	"os/exec"
+//	"net/http"
+//	"os"
+//	"os/exec"
 	"sort"
-	"strings"
-	"syscall"
+	//"strings"
+//	"syscall"
 
-	"github.com/golang/gddo/httputil/header"
+//	"github.com/golang/gddo/httputil/header"
 	"github.com/google/go-github/github"
 	"golang.org/x/oauth2"
+	"gopkg.in/src-d/go-git.v4"
+	"gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 )
 
-type ReposResponse []map[string]interface{}
+//type ReposResponse []map[string]interface{}
 
-func execGitCommand(index, total int, dirPath, gitUrl string, args ...string) error {
-	log.Printf("%d/%d - git %s %s\n", index, total, args[0], gitUrl)
-	cwd, err := syscall.Getwd()
-	if err != nil {
-		return err
-	}
-	err = syscall.Chdir(dirPath)
-	if err != nil {
-		return err
-	}
-	gitCmd := exec.Command("git", args...)
-	log.Printf("%v\n", gitCmd)
-	gitIn, _ := gitCmd.StdinPipe()
-	gitOut, _ := gitCmd.StdoutPipe()
-	gitCmd.Start()
-	gitIn.Close()
-	buf, err := ioutil.ReadAll(gitOut)
-	if err != nil {
-		return err
-	}
-	err = gitCmd.Wait()
-	if err != nil {
-		fmt.Print(string(buf))
-	}
-	syscall.Chdir(cwd)
-	return err
-}
+//func execGitCommand(index, total int, dirPath, gitUrl string, args ...string) error {
+//	log.Printf("%d/%d - git %s %s\n", index, total, args[0], gitUrl)
+//	cwd, err := syscall.Getwd()
+//	if err != nil {
+//		return err
+//	}
+//	err = syscall.Chdir(dirPath)
+//	if err != nil {
+//		return err
+//	}
+//	gitCmd := exec.Command("git", args...)
+//	log.Printf("%v\n", gitCmd)
+//	gitIn, _ := gitCmd.StdinPipe()
+//	gitOut, _ := gitCmd.StdoutPipe()
+//	gitCmd.Start()
+//	gitIn.Close()
+//	buf, err := ioutil.ReadAll(gitOut)
+//	if err != nil {
+//		return err
+//	}
+//	err = gitCmd.Wait()
+//	if err != nil {
+//		fmt.Print(string(buf))
+//	}
+//	syscall.Chdir(cwd)
+//	return err
+//}
 
-func fetchRepos(debug bool, url, userName, password string) (nextPage string, response ReposResponse, err error) {
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return
-	}
-
-	req.SetBasicAuth(userName, password)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != 200 {
-		err = fmt.Errorf("%v - url=%v", resp.Status, url)
-		return
-	}
-
-	params := header.ParseList(resp.Header, "Link")
-	if len(params) > 0 {
-		for _, param := range params {
-			if strings.Index(param, "rel=\"next\"") != -1 {
-				s, e := strings.Index(param, "<"), strings.Index(param, ">")
-				if s != -1 && e != -1 {
-					nextPage = param[s+1 : e]
-				}
-			}
-		}
-	}
-
-	respBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return
-	}
-
-	if debug {
-		var out bytes.Buffer
-		json.Indent(&out, respBody, "", "\t")
-		out.WriteTo(os.Stdout)
-	}
-
-	err = json.Unmarshal(respBody, &response)
-
-	return nextPage, response, err
-}
+//func fetchRepos(debug bool, url, userName, password string) (nextPage string, response ReposResponse, err error) {
+//	req, err := http.NewRequest("GET", url, nil)
+//	if err != nil {
+//		return
+//	}
+//
+//	req.SetBasicAuth(userName, password)
+//
+//	client := &http.Client{}
+//	resp, err := client.Do(req)
+//	if err != nil {
+//		return
+//	}
+//	defer resp.Body.Close()
+//
+//	if resp.StatusCode != 200 {
+//		err = fmt.Errorf("%v - url=%v", resp.Status, url)
+//		return
+//	}
+//
+//	params := header.ParseList(resp.Header, "Link")
+//	if len(params) > 0 {
+//		for _, param := range params {
+//			if strings.Index(param, "rel=\"next\"") != -1 {
+//				s, e := strings.Index(param, "<"), strings.Index(param, ">")
+//				if s != -1 && e != -1 {
+//					nextPage = param[s+1 : e]
+//				}
+//			}
+//		}
+//	}
+//
+//	respBody, err := ioutil.ReadAll(resp.Body)
+//	if err != nil {
+//		return
+//	}
+//
+//	if debug {
+//		var out bytes.Buffer
+//		json.Indent(&out, respBody, "", "\t")
+//		out.WriteTo(os.Stdout)
+//	}
+//
+//	err = json.Unmarshal(respBody, &response)
+//
+//	return nextPage, response, err
+//}
 
 type ByRepoURL []*github.Repository
 
@@ -161,13 +163,43 @@ func main() {
 	log.Printf("%d total repos", len(allRepos))
 	sort.Sort(ByRepoURL(allRepos))
 
-	for i, repo := range allRepos {
+	for _, repo := range allRepos {
 		log.Printf("\trepo=%v\n", *repo.URL)
-		// func execGitCommand(index, total int, dirPath, gitUrl string, args ...string) error {
-		err := execGitCommand(i, len(allRepos), rootPath, *repo.CloneURL, "clone", *repo.CloneURL)
+
+		//r, err := git.NewFilesystemRepository(rootPath + "/" + *repo.Name)
+		//if err != nil {
+		//	log.Fatal(err)
+		//}
+
+		r := git.NewMemoryRepository()
+
+		log.Printf("%#v\n", r)
+
+
+		cloneOptions := &git.CloneOptions{
+			Auth: http.NewBasicAuth(userName, accessToken),
+			URL: *repo.CloneURL,
+		}
+
+		cfg, err := r.Config()
 		if err != nil {
 			log.Fatal(err)
 		}
+
+		log.Printf("%#v\n", cfg)
+		err = r.Clone(cloneOptions)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Debugging break early
+		break
+
+		//// func execGitCommand(index, total int, dirPath, gitUrl string, args ...string) error {
+		//err := execGitCommand(i, len(allRepos), rootPath, *repo.CloneURL, "clone", *repo.CloneURL)
+		//if err != nil {
+		//	log.Fatal(err)
+		//}
 	}
 
 	//// Fetch the initial set of repos and continue until no more links are returned.
@@ -189,39 +221,39 @@ func main() {
 	//}
 }
 
-func processResponse(response ReposResponse, githubOrgName, rootPath string) error {
-	log.Printf("Processing %d repos for org %s\n", len(response), githubOrgName)
-	total := len(response)
-	for index, e := range response {
-		gitUrl := e["clone_url"].(string)
-
-		if !strings.HasSuffix(gitUrl, ".git") {
-			log.Fatal(errors.New("Missing '.git' from URL.."))
-		}
-
-		i := strings.LastIndex(gitUrl, "/")
-		if i == -1 {
-			log.Fatal(errors.New("Invalid url format..."))
-		}
-
-		dirName := gitUrl[i+1 : len(gitUrl)-4]
-		dirPath := fmt.Sprintf("%s%s%s", rootPath, string(os.PathSeparator), dirName)
-		fi, err := os.Stat(dirPath)
-		if err != nil {
-			// Doesn't exist, checkout
-			err := execGitCommand(index, total, rootPath, gitUrl, "clone", gitUrl)
-			if err != nil {
-				log.Println(err)
-			}
-		} else if fi.IsDir() {
-			err := execGitCommand(index, total, dirPath, gitUrl, "pull", "origin")
-			if err != nil {
-				log.Println(err)
-			}
-		} else {
-			log.Fatal(errors.New("Expected directory"))
-		}
-	}
-
-	return nil
-}
+//func processResponse(response ReposResponse, githubOrgName, rootPath string) error {
+//	log.Printf("Processing %d repos for org %s\n", len(response), githubOrgName)
+//	total := len(response)
+//	for index, e := range response {
+//		gitUrl := e["clone_url"].(string)
+//
+//		if !strings.HasSuffix(gitUrl, ".git") {
+//			log.Fatal(errors.New("Missing '.git' from URL.."))
+//		}
+//
+//		i := strings.LastIndex(gitUrl, "/")
+//		if i == -1 {
+//			log.Fatal(errors.New("Invalid url format..."))
+//		}
+//
+//		dirName := gitUrl[i+1 : len(gitUrl)-4]
+//		dirPath := fmt.Sprintf("%s%s%s", rootPath, string(os.PathSeparator), dirName)
+//		fi, err := os.Stat(dirPath)
+//		if err != nil {
+//			// Doesn't exist, checkout
+//			err := execGitCommand(index, total, rootPath, gitUrl, "clone", gitUrl)
+//			if err != nil {
+//				log.Println(err)
+//			}
+//		} else if fi.IsDir() {
+//			err := execGitCommand(index, total, dirPath, gitUrl, "pull", "origin")
+//			if err != nil {
+//				log.Println(err)
+//			}
+//		} else {
+//			log.Fatal(errors.New("Expected directory"))
+//		}
+//	}
+//
+//	return nil
+//}
