@@ -1,8 +1,56 @@
-hash: 6e9195048842c64edd6c55da27364d94dc2f55d508b68cf2470ae369a30a0467
-updated: 2017-01-19T21:08:11.343004016-05:00
+hash: 5ab5aa9e2cd1edfc65216df2bc2bb1cb119523ee7a3edcbdfa89e0a2f64af8f9
+updated: 2017-01-19T22:20:09.846769737-05:00
 imports:
 - name: github.com/golang/gddo
   version: 806603679dee755c926f72ac76673ee4594dcd32
   subpackages:
   - httputil/header
+- name: github.com/golang/protobuf
+  version: 4bd1920723d7b7c925de087aa32e2187708897f7
+  subpackages:
+  - proto
+  - ptypes
+  - ptypes/any
+  - ptypes/duration
+  - ptypes/empty
+  - ptypes/struct
+  - ptypes/timestamp
+  - ptypes/wrappers
+- name: github.com/google/go-github
+  version: c9c37fd6ce0247943d1aa34fc3813c62c5cb0225
+  subpackages:
+  - github
+- name: github.com/google/go-querystring
+  version: 53e6ce116135b80d037921a7fdd5138cf32d7a8a
+  subpackages:
+  - query
+- name: golang.org/x/net
+  version: 0e2717dc3cc05907dc23096ef3a9086ea93f567f
+  subpackages:
+  - context
+- name: golang.org/x/oauth2
+  version: 1e695b1c8febf17aad3bfa7bf0a819ef94b98ad5
+  subpackages:
+  - internal
+- name: google.golang.org/appengine
+  version: c7b8227c83007befd67b324a64c969ebc1d7475d
+  subpackages:
+  - aetest
+  - datastore
+  - internal
+  - internal/app_identity
+  - internal/base
+  - internal/datastore
+  - internal/log
+  - internal/memcache
+  - internal/modules
+  - internal/remote_api
+  - internal/search
+  - internal/urlfetch
+  - internal/user
+  - log
+  - memcache
+  - search
+  - urlfetch
+  - user
 testImports: []

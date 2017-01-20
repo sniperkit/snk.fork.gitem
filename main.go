@@ -11,16 +11,19 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"sort"
 	"strings"
 	"syscall"
 
 	"github.com/golang/gddo/httputil/header"
+	"github.com/google/go-github/github"
+	"golang.org/x/oauth2"
 )
 
 type ReposResponse []map[string]interface{}
 
 func execGitCommand(index, total int, dirPath, gitUrl string, args ...string) error {
-	log.Printf("%d/%d - %s %s from %s\n", index, total, args[0], dirPath, gitUrl)
+	log.Printf("%d/%d - git %s %s\n", index, total, args[0], gitUrl)
 	cwd, err := syscall.Getwd()
 	if err != nil {
 		return err
@@ -30,6 +33,7 @@ func execGitCommand(index, total int, dirPath, gitUrl string, args ...string) er
 		return err
 	}
 	gitCmd := exec.Command("git", args...)
+	log.Printf("%v\n", gitCmd)
 	gitIn, _ := gitCmd.StdinPipe()
 	gitOut, _ := gitCmd.StdoutPipe()
 	gitCmd.Start()
@@ -62,7 +66,7 @@ func fetchRepos(debug bool, url, userName, password string) (nextPage string, re
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		err = errors.New(resp.Status)
+		err = fmt.Errorf("%v - url=%v", resp.Status, url)
 		return
 	}
 
@@ -94,6 +98,12 @@ func fetchRepos(debug bool, url, userName, password string) (nextPage string, re
 	return nextPage, response, err
 }
 
+type ByRepoURL []*github.Repository
+
+func (a ByRepoURL) Len() int           { return len(a) }
+func (a ByRepoURL) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByRepoURL) Less(i, j int) bool { return *a[i].URL < *a[j].URL }
+
 func main() {
 	var debug bool
 	var userName, password, githubOrgName, rootPath string
@@ -103,6 +113,8 @@ func main() {
 	flag.StringVar(&password, "password", "", "Password")
 	flag.StringVar(&githubOrgName, "githubOrg", "", "Git organization name")
 	flag.Parse()
+
+	log.SetFlags(log.Flags() | log.Lshortfile)
 
 	if rootPath == "" {
 		log.Fatal(errors.New("rootPath must be specified"))
@@ -120,23 +132,60 @@ func main() {
 		log.Fatal(errors.New("Github orgname must be specified"))
 	}
 
-	// Fetch the initial set of repos and continue until no more links are returned.
-	url := fmt.Sprintf("https://api.github.com/orgs/%s/repos?per_page=200&type=all", githubOrgName)
-	var aggregatedResponse ReposResponse
-	for nextPage := url; nextPage != ""; {
-		var response ReposResponse
-		var err error
-		nextPage, response, err = fetchRepos(debug, nextPage, userName, password)
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: "142d328e59a56d3cdea11b51e5a0d9cf711042e3"},
+	)
+	tc := oauth2.NewClient(oauth2.NoContext, ts)
+
+	opt := &github.RepositoryListByOrgOptions{
+		ListOptions: github.ListOptions{PerPage: 50},
+	}
+
+	allRepos := []*github.Repository{}
+	client := github.NewClient(tc)
+	for {
+		repos, resp, err := client.Repositories.ListByOrg(githubOrgName, opt)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		aggregatedResponse = append(aggregatedResponse, response...)
+		allRepos = append(allRepos, repos...)
+
+		opt.ListOptions.Page = resp.NextPage
+		if opt.ListOptions.Page >= resp.LastPage {
+			break
+		}
 	}
 
-	if err := processResponse(aggregatedResponse, githubOrgName, rootPath); err != nil {
-		log.Fatal(err)
+	log.Printf("%d total repos", len(allRepos))
+	sort.Sort(ByRepoURL(allRepos))
+
+	for i, repo := range allRepos {
+		log.Printf("\trepo=%v\n", *repo.URL)
+		// func execGitCommand(index, total int, dirPath, gitUrl string, args ...string) error {
+		err := execGitCommand(i, len(allRepos), rootPath, *repo.CloneURL, "clone", *repo.CloneURL)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
+
+	//// Fetch the initial set of repos and continue until no more links are returned.
+	//url := fmt.Sprintf("https://api.github.com/orgs/%s/repos?per_page=200&type=all", githubOrgName)
+	//var aggregatedResponse ReposResponse
+	//for nextPage := url; nextPage != ""; {
+	//	var response ReposResponse
+	//	var err error
+	//	nextPage, response, err = fetchRepos(debug, nextPage, userName, password)
+	//	if err != nil {
+	//		log.Fatal(err)
+	//	}
+	//
+	//	aggregatedResponse = append(aggregatedResponse, response...)
+	//}
+	//
+	//if err := processResponse(aggregatedResponse, githubOrgName, rootPath); err != nil {
+	//	log.Fatal(err)
+	//}
 }
 
 func processResponse(response ReposResponse, githubOrgName, rootPath string) error {
