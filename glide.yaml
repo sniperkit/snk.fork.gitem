@@ -1,0 +1,3 @@
+package: github.com/stxmendez/gitem
+import:
+- package: github.com/golang/gddo

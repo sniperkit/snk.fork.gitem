@@ -1,0 +1,8 @@
+hash: 6e9195048842c64edd6c55da27364d94dc2f55d508b68cf2470ae369a30a0467
+updated: 2017-01-19T21:08:11.343004016-05:00
+imports:
+- name: github.com/golang/gddo
+  version: 806603679dee755c926f72ac76673ee4594dcd32
+  subpackages:
+  - httputil/header
+testImports: []
