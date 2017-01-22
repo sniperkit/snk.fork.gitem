@@ -16,3 +16,5 @@ import:
 - package: github.com/sergi/go-diff
   subpackages:
   - diffmatchpatch/...
+- package: github.com/urfave/cli
+  version: ^1.19.1

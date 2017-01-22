@@ -22,7 +22,12 @@ import (
 //func (a ByRepoURL) Less(i, j int) bool { return *a[i].URL < *a[j].URL }
 
 func list(c *cli.Context) error {
-	return gitem.ListRepositoriesForUser(c.String("user"))
+	org := c.String("org")
+	if org != "" {
+		return gitem.ListRepositoriesForOrg(org, c.String("password"))
+	} else {
+		return gitem.ListRepositoriesForUser(c.String("user"))
+	}
 }
 
 func main() {
@@ -34,7 +39,11 @@ func main() {
 		},
 		{
 			Action: list,
-			Flags:  []cli.Flag{cli.StringFlag{Name: "user"}},
+			Flags:  []cli.Flag{
+				cli.StringFlag{Name: "org"},
+				cli.StringFlag{Name: "user"},
+				cli.StringFlag{Name: "password"},
+			},
 			Name:   "list",
 			Usage:  "list repositories",
 		},

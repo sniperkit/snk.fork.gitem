@@ -1,27 +1,18 @@
-hash: 32c9014fc228fa3a2060822a4612afed91614476b9e1df734d3fcda207b7844b
-updated: 2017-01-20T10:03:33.971446497-05:00
+hash: 835f009c2da46c10a22ed25d39298e129363be0181807ea9acffea938a247858
+updated: 2017-01-21T22:00:17.898553947-05:00
 imports:
 - name: github.com/golang/gddo
-  version: 58f386cba69d62f963a0848088da3deee0062c32
-  subpackages:
-  - httputil/header
+  version: e3ab6feda1be897eaff8b618c197dcf4d1d516b9
 - name: github.com/golang/protobuf
-  version: ""
+  version: e3ab6feda1be897eaff8b618c197dcf4d1d516b9
   subpackages:
   - proto
-  - ptypes
-  - ptypes/any
-  - ptypes/duration
-  - ptypes/empty
-  - ptypes/struct
-  - ptypes/timestamp
-  - ptypes/wrappers
 - name: github.com/google/go-github
-  version: 58f386cba69d62f963a0848088da3deee0062c32
+  version: e3ab6feda1be897eaff8b618c197dcf4d1d516b9
   subpackages:
   - github
 - name: github.com/google/go-querystring
-  version: 58f386cba69d62f963a0848088da3deee0062c32
+  version: e3ab6feda1be897eaff8b618c197dcf4d1d516b9
   subpackages:
   - query
 - name: github.com/sergi/go-diff
@@ -35,6 +26,8 @@ imports:
   - scanner
   - token
   - types
+- name: github.com/urfave/cli
+  version: 0bdeddeeb0f650497d603c4ad7b20cfe685682f6
 - name: golang.org/x/crypto
   version: b8a2a83acfe6e6770b75de42d5ff4c67596675c0
   subpackages:
@@ -44,41 +37,33 @@ imports:
   - ed25519
   - ed25519/internal/edwards25519
 - name: golang.org/x/net
-  version: ""
+  version: e3ab6feda1be897eaff8b618c197dcf4d1d516b9
   subpackages:
   - context
 - name: golang.org/x/oauth2
-  version: ""
+  version: e3ab6feda1be897eaff8b618c197dcf4d1d516b9
   subpackages:
   - internal
 - name: google.golang.org/appengine
-  version: ""
+  version: e3ab6feda1be897eaff8b618c197dcf4d1d516b9
   subpackages:
-  - aetest
-  - datastore
+  - urlfetch
   - internal
-  - internal/app_identity
+  - internal/urlfetch
   - internal/base
   - internal/datastore
   - internal/log
-  - internal/memcache
-  - internal/modules
   - internal/remote_api
-  - internal/search
-  - internal/urlfetch
-  - internal/user
-  - log
-  - memcache
-  - search
-  - urlfetch
-  - user
 - name: gopkg.in/src-d/go-git.v4
   version: 51e9a9cc224605572bdc69402827ce560fda855d
   subpackages:
-  - config
   - plumbing
-  - plumbing/format/packfile
+  - plumbing/format/index
   - plumbing/object
+  - storage/filesystem
+  - plumbing/transport/http
+  - config
+  - plumbing/format/packfile
   - plumbing/protocol/packp
   - plumbing/protocol/packp/capability
   - plumbing/protocol/packp/sideband
@@ -86,22 +71,19 @@ imports:
   - plumbing/storer
   - plumbing/transport
   - plumbing/transport/client
-  - storage/filesystem
   - storage/memory
   - utils/diff
   - utils/ioutil
   - utils/binary
-  - plumbing/format/pktline
-  - plumbing/format/index
-  - plumbing/transport/file
-  - plumbing/transport/git
-  - plumbing/transport/http
-  - plumbing/transport/ssh
   - plumbing/format/config
   - plumbing/format/idxfile
   - plumbing/format/objfile
   - storage/filesystem/internal/dotgit
+  - plumbing/format/pktline
   - plumbing/transport/internal/common
+  - plumbing/transport/file
+  - plumbing/transport/git
+  - plumbing/transport/ssh
   - plumbing/transport/server
 - name: gopkg.in/warnings.v0
   version: 8a331561fe74dadba6edfc59f3be66c22c3b065d
