@@ -1,12 +1,12 @@
 package gitem
 
 import (
-	"fmt"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
 
+	"github.com/google/go-github/github"
 	"gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing"
 	"gopkg.in/src-d/go-git.v4/plumbing/format/index"
@@ -15,9 +15,10 @@ import (
 	osfs "srcd.works/go-billy.v1/os"
 )
 
-// Checkout
-func Checkout(url, directory string) error {
-	s, err := filesystem.NewStorage(osfs.New(directory))
+func Clone(repo *github.Repository, rootPath string) error {
+	repoPath := filepath.Join(rootPath, *repo.Name)
+	gitPath := filepath.Join(repoPath, ".git")
+	s, err := filesystem.NewStorage(osfs.New(gitPath))
 	if err != nil {
 		return err
 	}
@@ -27,11 +28,8 @@ func Checkout(url, directory string) error {
 		return err
 	}
 
-	// Clone the given repository to the given directory
-	log.Printf("git clone %s %s", url, directory)
-
 	err = r.Clone(&git.CloneOptions{
-		URL:           url,
+		URL:           *repo.CloneURL,
 		ReferenceName: plumbing.ReferenceName("HEAD"),
 	})
 	if err != nil {
@@ -48,7 +46,6 @@ func Checkout(url, directory string) error {
 		return err
 	}
 
-	log.Printf("%v\n", commit)
 	tree, err := commit.Tree()
 	if err != nil {
 		return err
@@ -66,16 +63,13 @@ func Checkout(url, directory string) error {
 		}
 		defer reader.Close()
 
-		rootDir := filepath.Dir(directory)
 		parentDir := filepath.Dir(f.Name)
-		err = os.MkdirAll(filepath.Join(rootDir, parentDir), os.ModeDir|0755)
+		err = os.MkdirAll(filepath.Join(repoPath, parentDir), os.ModeDir|0755)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		fullPath := filepath.Join(rootDir, f.Name)
-
-		fmt.Printf("hash %s    %s fullpath=%s\n", f.Hash, f.Name, fullPath)
+		fullPath := filepath.Join(repoPath, f.Name)
 
 		out, err := os.Create(fullPath)
 		if err != nil {
@@ -106,7 +100,7 @@ func Checkout(url, directory string) error {
 		return err
 	}
 
-	idxFile, err := os.Create(filepath.Join(directory, "index"))
+	idxFile, err := os.Create(filepath.Join(gitPath, "index"))
 	if err != nil {
 		return err
 	}

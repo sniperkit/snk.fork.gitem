@@ -6,46 +6,95 @@ import (
 	//"log"
 	//"sort"
 
+	"github.com/google/go-github/github"
 	"github.com/stxmendez/gitem"
 	//"github.com/google/go-github/github"
 	"github.com/urfave/cli"
 	//"golang.org/x/oauth2"
 	//"gopkg.in/src-d/go-git.v4"
 	//"gopkg.in/src-d/go-git.v4/plumbing/transport/http"
+	"fmt"
+	"log"
 	"os"
 )
 
-//type ByRepoURL []*github.Repository
-//
-//func (a ByRepoURL) Len() int           { return len(a) }
-//func (a ByRepoURL) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-//func (a ByRepoURL) Less(i, j int) bool { return *a[i].URL < *a[j].URL }
+func clone(c *cli.Context) error {
+	user := c.String("user")
+	if user == "" {
+		log.Fatal("user must be specified")
+	}
+
+	rootPath := c.String("rootPath")
+	if rootPath == "" {
+		log.Fatal("rootPath must be specified")
+	}
+
+	if user != "" {
+		repos, err := gitem.ListRepositoriesForUser(c.String("user"))
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		for _, repo := range repos {
+			fmt.Printf("Cloning %s\n", *repo.CloneURL)
+			err = gitem.Clone(repo, rootPath)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+	}
+
+	return nil
+}
+
+func printRepos(repos []*github.Repository) {
+	for _, repo := range repos {
+		fmt.Printf("%s\n", *repo.Name)
+	}
+}
 
 func list(c *cli.Context) error {
 	org := c.String("org")
 	if org != "" {
-		return gitem.ListRepositoriesForOrg(org, c.String("password"))
+		repos, err := gitem.ListRepositoriesForOrg(org, c.String("password"))
+		if err != nil {
+			log.Fatal(err)
+		}
+		printRepos(repos)
 	} else {
-		return gitem.ListRepositoriesForUser(c.String("user"))
+		repos, err := gitem.ListRepositoriesForUser(c.String("user"))
+		if err != nil {
+			log.Fatal(err)
+		}
+		printRepos(repos)
 	}
+
+	return nil
 }
 
 func main() {
 	app := cli.NewApp()
 	app.Commands = []cli.Command{
 		{
-			Name:  "checkout",
-			Usage: "checkout repositories",
+			Action: clone,
+			Flags: []cli.Flag{
+				cli.StringFlag{Name: "org"},
+				cli.StringFlag{Name: "user"},
+				cli.StringFlag{Name: "password"},
+				cli.StringFlag{Name: "rootPath"},
+			},
+			Name:  "clone",
+			Usage: "clone repositories",
 		},
 		{
 			Action: list,
-			Flags:  []cli.Flag{
+			Flags: []cli.Flag{
 				cli.StringFlag{Name: "org"},
 				cli.StringFlag{Name: "user"},
 				cli.StringFlag{Name: "password"},
 			},
-			Name:   "list",
-			Usage:  "list repositories",
+			Name:  "list",
+			Usage: "list repositories",
 		},
 	}
 

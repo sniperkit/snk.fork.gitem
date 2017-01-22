@@ -1,25 +1,25 @@
 hash: 835f009c2da46c10a22ed25d39298e129363be0181807ea9acffea938a247858
-updated: 2017-01-21T22:00:17.898553947-05:00
+updated: 2017-01-22T16:09:00.310554904-05:00
 imports:
 - name: github.com/golang/gddo
-  version: e3ab6feda1be897eaff8b618c197dcf4d1d516b9
+  version: 806603679dee755c926f72ac76673ee4594dcd32
 - name: github.com/golang/protobuf
-  version: e3ab6feda1be897eaff8b618c197dcf4d1d516b9
+  version: 4bd1920723d7b7c925de087aa32e2187708897f7
   subpackages:
   - proto
 - name: github.com/google/go-github
-  version: e3ab6feda1be897eaff8b618c197dcf4d1d516b9
+  version: c9c37fd6ce0247943d1aa34fc3813c62c5cb0225
   subpackages:
   - github
 - name: github.com/google/go-querystring
-  version: e3ab6feda1be897eaff8b618c197dcf4d1d516b9
+  version: 53e6ce116135b80d037921a7fdd5138cf32d7a8a
   subpackages:
   - query
 - name: github.com/sergi/go-diff
   version: 24e2351369ec4949b2ed0dc5c477afdd4c4034e8
   subpackages:
-  - diffmatchpatch/...
   - diffmatchpatch
+  - diffmatchpatch/...
 - name: github.com/src-d/gcfg
   version: f187355171c936ac84a82793659ebb4936bc1c23
   subpackages:
@@ -31,39 +31,41 @@ imports:
 - name: golang.org/x/crypto
   version: b8a2a83acfe6e6770b75de42d5ff4c67596675c0
   subpackages:
-  - ssh
-  - ssh/agent
   - curve25519
   - ed25519
   - ed25519/internal/edwards25519
+  - ssh
+  - ssh/agent
 - name: golang.org/x/net
-  version: e3ab6feda1be897eaff8b618c197dcf4d1d516b9
+  version: 0e2717dc3cc05907dc23096ef3a9086ea93f567f
   subpackages:
   - context
 - name: golang.org/x/oauth2
-  version: e3ab6feda1be897eaff8b618c197dcf4d1d516b9
+  version: 1e695b1c8febf17aad3bfa7bf0a819ef94b98ad5
   subpackages:
   - internal
 - name: google.golang.org/appengine
-  version: e3ab6feda1be897eaff8b618c197dcf4d1d516b9
+  version: c7b8227c83007befd67b324a64c969ebc1d7475d
   subpackages:
-  - urlfetch
   - internal
-  - internal/urlfetch
   - internal/base
   - internal/datastore
   - internal/log
   - internal/remote_api
+  - internal/urlfetch
+  - urlfetch
 - name: gopkg.in/src-d/go-git.v4
   version: 51e9a9cc224605572bdc69402827ce560fda855d
   subpackages:
-  - plumbing
-  - plumbing/format/index
-  - plumbing/object
-  - storage/filesystem
-  - plumbing/transport/http
   - config
+  - plumbing
+  - plumbing/format/config
+  - plumbing/format/idxfile
+  - plumbing/format/index
+  - plumbing/format/objfile
   - plumbing/format/packfile
+  - plumbing/format/pktline
+  - plumbing/object
   - plumbing/protocol/packp
   - plumbing/protocol/packp/capability
   - plumbing/protocol/packp/sideband
@@ -71,20 +73,18 @@ imports:
   - plumbing/storer
   - plumbing/transport
   - plumbing/transport/client
-  - storage/memory
-  - utils/diff
-  - utils/ioutil
-  - utils/binary
-  - plumbing/format/config
-  - plumbing/format/idxfile
-  - plumbing/format/objfile
-  - storage/filesystem/internal/dotgit
-  - plumbing/format/pktline
-  - plumbing/transport/internal/common
   - plumbing/transport/file
   - plumbing/transport/git
-  - plumbing/transport/ssh
+  - plumbing/transport/http
+  - plumbing/transport/internal/common
   - plumbing/transport/server
+  - plumbing/transport/ssh
+  - storage/filesystem
+  - storage/filesystem/internal/dotgit
+  - storage/memory
+  - utils/binary
+  - utils/diff
+  - utils/ioutil
 - name: gopkg.in/warnings.v0
   version: 8a331561fe74dadba6edfc59f3be66c22c3b065d
 - name: srcd.works/go-billy.v1
