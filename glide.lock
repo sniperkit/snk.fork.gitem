@@ -1,8 +1,6 @@
-hash: 835f009c2da46c10a22ed25d39298e129363be0181807ea9acffea938a247858
-updated: 2017-01-22T16:09:00.310554904-05:00
+hash: 3878d2a6e8c37fabf5df96772664ed5180aaa9457bf86094c056c86c3fcf5dbf
+updated: 2017-01-22T22:53:35.690789108-05:00
 imports:
-- name: github.com/golang/gddo
-  version: 806603679dee755c926f72ac76673ee4594dcd32
 - name: github.com/golang/protobuf
   version: 4bd1920723d7b7c925de087aa32e2187708897f7
   subpackages:
@@ -19,7 +17,6 @@ imports:
   version: 24e2351369ec4949b2ed0dc5c477afdd4c4034e8
   subpackages:
   - diffmatchpatch
-  - diffmatchpatch/...
 - name: github.com/src-d/gcfg
   version: f187355171c936ac84a82793659ebb4936bc1c23
   subpackages:
