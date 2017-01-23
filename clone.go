@@ -1,6 +1,7 @@
 package gitem
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -46,6 +47,8 @@ func Clone(repo *github.Repository, rootPath string) error {
 		return err
 	}
 
+	fmt.Printf("Checking out commit %v\n", commit)
+
 	tree, err := commit.Tree()
 	if err != nil {
 		return err
@@ -56,7 +59,12 @@ func Clone(repo *github.Repository, rootPath string) error {
 		Entries: []index.Entry{},
 	}
 
+	fi := tree.Files()
+	defer fi.Close()
+
+
 	err = tree.Files().ForEach(func(f *object.File) error {
+		fmt.Printf("%s\n", f.Name)
 		reader, err := f.Reader()
 		if err != nil {
 			log.Fatal(err)
@@ -102,7 +110,8 @@ func Clone(repo *github.Repository, rootPath string) error {
 
 	idxFile, err := os.Create(filepath.Join(gitPath, "index"))
 	if err != nil {
-		return err
+		log.Fatal(err)
+		//return err
 	}
 
 	defer idxFile.Close()
