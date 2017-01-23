@@ -16,6 +16,7 @@ import (
 	osfs "srcd.works/go-billy.v1/os"
 )
 
+// Clone the specified github repository to the root path.
 func Clone(repo *github.Repository, rootPath string) error {
 	repoPath := filepath.Join(rootPath, *repo.Name)
 	gitPath := filepath.Join(repoPath, ".git")
@@ -61,7 +62,6 @@ func Clone(repo *github.Repository, rootPath string) error {
 
 	fi := tree.Files()
 	defer fi.Close()
-
 
 	err = tree.Files().ForEach(func(f *object.File) error {
 		fmt.Printf("%s\n", f.Name)
@@ -111,7 +111,6 @@ func Clone(repo *github.Repository, rootPath string) error {
 	idxFile, err := os.Create(filepath.Join(gitPath, "index"))
 	if err != nil {
 		log.Fatal(err)
-		//return err
 	}
 
 	defer idxFile.Close()

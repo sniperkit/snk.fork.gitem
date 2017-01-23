@@ -7,6 +7,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
+// ByRepoURL struct used to sort repositories by URL.
 type ByRepoURL []*github.Repository
 
 func (a ByRepoURL) Len() int           { return len(a) }
@@ -49,7 +50,7 @@ func ListRepositoriesForOrg(org, accessToken string) ([]*github.Repository, erro
 }
 
 // ListRepositoriesForUser lists all repositories owned by the specified user.
-func ListRepositoriesForUser(user string) ([]*github.Repository, error)  {
+func ListRepositoriesForUser(user string) ([]*github.Repository, error) {
 	client := github.NewClient(nil)
 	opt := github.RepositoryListOptions{}
 
