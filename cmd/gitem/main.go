@@ -8,6 +8,7 @@ import (
 	"github.com/google/go-github/github"
 	"github.com/stxmendez/gitem"
 	"github.com/urfave/cli"
+	"gopkg.in/src-d/go-git.v4/plumbing/transport"
 )
 
 func clone(c *cli.Context) error {
@@ -31,7 +32,11 @@ func clone(c *cli.Context) error {
 			fmt.Printf("Cloning %s\n", *repo.CloneURL)
 			err = gitem.Clone(repo, rootPath)
 			if err != nil {
-				log.Fatal(err)
+				if err == transport.ErrEmptyRemoteRepository {
+					fmt.Printf("\trepository is empty\n")
+				} else {
+					log.Fatal(err)
+				}
 			}
 		}
 	}
