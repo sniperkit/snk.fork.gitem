@@ -11,6 +11,7 @@ import (
 	"github.com/urfave/cli"
 	"golang.org/x/oauth2"
 	"gopkg.in/src-d/go-git.v4/plumbing/transport"
+	githttp "gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 )
 
 func authArguments() []cli.Flag {
@@ -21,33 +22,27 @@ func authArguments() []cli.Flag {
 	}
 }
 
-func clone(c *cli.Context) error {
-	client := NewHttpClient(c)
-	user := c.String("user")
-	if user == "" {
-		log.Fatal("user must be specified")
-	}
-
+func cloneRepos(c *cli.Context) error {
 	rootPath := c.String("rootPath")
 	if rootPath == "" {
 		log.Fatal("rootPath must be specified")
 	}
 
-	if user != "" {
-		repos, err := gitem.ListRepositoriesForUser(client, c.String("user"))
-		if err != nil {
-			log.Fatal(err)
-		}
+	client := newHttpClient(c)
+	repos, err := getRepos(c, client)
+	if err != nil {
+		return err
+	}
 
-		for _, repo := range repos {
-			fmt.Printf("Cloning %s\n", *repo.CloneURL)
-			err = gitem.Clone(repo, rootPath)
-			if err != nil {
-				if err == transport.ErrEmptyRemoteRepository {
-					fmt.Printf("\trepository is empty\n")
-				} else {
-					log.Fatal(err)
-				}
+	auth := newAuth(c)
+	for _, repo := range repos {
+		fmt.Printf("Cloning %s\n", *repo.CloneURL)
+		err = gitem.Clone(repo, auth, rootPath)
+		if err != nil {
+			if err == transport.ErrEmptyRemoteRepository {
+				fmt.Printf("\trepository is empty\n")
+			} else {
+				return err
 			}
 		}
 	}
@@ -55,23 +50,41 @@ func clone(c *cli.Context) error {
 	return nil
 }
 
-func listContributors(c *cli.Context) error {
-	httpClient := NewHttpClient(c)
-	client := github.NewClient(httpClient)
-	contribs, _, err := client.Repositories.ListContributors(c.String("owner"), c.String("repo"), nil)
-	if err != nil {
-		return err
+func getRepos(c *cli.Context, client *http.Client) ([]*github.Repository, error) {
+	org := c.String("org")
+	if org != "" {
+		return gitem.ListRepositoriesForOrg(client, org)
 	}
 
-	for _, contrib := range contribs {
-		fmt.Printf("%s\n", *contrib.Login)
+	return gitem.ListRepositoriesForUser(client, c.String("owner"))
+}
+
+func listContributors(c *cli.Context) error {
+	httpClient := newHttpClient(c)
+	client := github.NewClient(httpClient)
+
+	opt := &github.ListContributorsOptions{}
+	for {
+		contribs, resp, err := client.Repositories.ListContributors(c.String("owner"), c.String("repo"), opt)
+		if err != nil {
+			return err
+		}
+
+		for _, contrib := range contribs {
+			fmt.Printf("%s\n", *contrib.Login)
+		}
+
+		opt.ListOptions.Page = resp.NextPage
+		if opt.ListOptions.Page >= resp.LastPage {
+			break
+		}
 	}
 
 	return nil
 }
 
 func listLanguages(c *cli.Context) error {
-	httpClient := NewHttpClient(c)
+	httpClient := newHttpClient(c)
 	client := github.NewClient(httpClient)
 	langs, _, err := client.Repositories.ListLanguages(c.String("owner"), c.String("repo"))
 	if err != nil {
@@ -86,27 +99,18 @@ func listLanguages(c *cli.Context) error {
 }
 
 func listRepos(c *cli.Context) error {
-	client := NewHttpClient(c)
-	org := c.String("org")
-	if org != "" {
-		repos, err := gitem.ListRepositoriesForOrg(client, org)
-		if err != nil {
-			log.Fatal(err)
-		}
-		printRepos(repos)
-	} else {
-		repos, err := gitem.ListRepositoriesForUser(client, c.String("owner"))
-		if err != nil {
-			log.Fatal(err)
-		}
-		printRepos(repos)
+	client := newHttpClient(c)
+	repos, err := getRepos(c, client)
+	if err != nil {
+		return err
 	}
 
+	printRepos(repos)
 	return nil
 }
 
 func listTags(c *cli.Context) error {
-	httpClient := NewHttpClient(c)
+	httpClient := newHttpClient(c)
 	client := github.NewClient(httpClient)
 	opt := &github.ListOptions{}
 
@@ -130,33 +134,42 @@ func listTags(c *cli.Context) error {
 }
 
 func listTeams(c *cli.Context) error {
-	httpClient := NewHttpClient(c)
+	httpClient := newHttpClient(c)
 	client := github.NewClient(httpClient)
-	teams, _, err := client.Repositories.ListTeams(c.String("owner"), c.String("repo"), nil)
-	if err != nil {
-		return err
-	}
 
-	for _, team := range teams {
-		fmt.Printf("%s\n", *team.Name)
-	}
+	opt := &github.ListOptions{}
+	for {
+		teams, resp, err := client.Repositories.ListTeams(c.String("owner"), c.String("repo"), opt)
+		if err != nil {
+			return err
+		}
 
+		for _, team := range teams {
+			fmt.Printf("%s\n", *team.Name)
+		}
+
+		opt.Page = resp.NextPage
+		if opt.Page >= resp.LastPage {
+			break
+		}
+	}
 	return nil
 }
 
 func main() {
 	app := cli.NewApp()
+	app.Usage = "a tool for listing and cloning github repositories"
 	app.Commands = []cli.Command{
 		{
-			Action: clone,
-			Flags: []cli.Flag{
-				cli.StringFlag{Name: "org"},
-				cli.StringFlag{Name: "user"},
-				cli.StringFlag{Name: "password"},
-				cli.StringFlag{Name: "rootPath"},
+			Name: "clone",
+			Subcommands: []cli.Command{
+				{
+					Action: cloneRepos,
+					Flags:  append(authArguments(), orgArgument(), ownerArgument(), rootPathArgument()),
+					Name:   "repos",
+					Usage:  "clone repositories",
+				},
 			},
-			Name:  "clone",
-			Usage: "clone repositories",
 		},
 		{
 			Name: "list",
@@ -212,8 +225,22 @@ func repoArgument() cli.Flag {
 	return cli.StringFlag{Name: "repo"}
 }
 
-// NewHttpClient returns a new http.Client which is configured for Basic or Oauth2 Authentication.
-func NewHttpClient(c *cli.Context) *http.Client {
+func rootPathArgument() cli.Flag {
+	return cli.StringFlag{Name: "rootPath"}
+}
+
+func newAuth(c *cli.Context) transport.AuthMethod {
+	user := c.String("user")
+	pass := c.String("password")
+	if user != "" {
+		return githttp.NewBasicAuth(user, pass)
+	}
+
+	return nil
+}
+
+// newHttpClient returns a new http.Client which is configured for Basic or Oauth2 Authentication.
+func newHttpClient(c *cli.Context) *http.Client {
 	user := c.String("user")
 	pass := c.String("password")
 	token := c.String("token")

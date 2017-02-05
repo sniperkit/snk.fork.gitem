@@ -11,12 +11,13 @@ import (
 	"gopkg.in/src-d/go-git.v4/plumbing"
 	"gopkg.in/src-d/go-git.v4/plumbing/format/index"
 	"gopkg.in/src-d/go-git.v4/plumbing/object"
+	"gopkg.in/src-d/go-git.v4/plumbing/transport"
 	"gopkg.in/src-d/go-git.v4/storage/filesystem"
 	osfs "srcd.works/go-billy.v1/os"
 )
 
 // Clone the specified github repository to the root path.
-func Clone(repo *github.Repository, rootPath string) error {
+func Clone(repo *github.Repository, auth transport.AuthMethod, rootPath string) error {
 	repoPath := filepath.Join(rootPath, *repo.Name)
 	gitPath := filepath.Join(repoPath, ".git")
 	s, err := filesystem.NewStorage(osfs.New(gitPath))
@@ -30,8 +31,9 @@ func Clone(repo *github.Repository, rootPath string) error {
 	}
 
 	err = r.Clone(&git.CloneOptions{
-		URL:           *repo.CloneURL,
+		Auth:          auth,
 		ReferenceName: plumbing.ReferenceName("HEAD"),
+		URL:           *repo.CloneURL,
 	})
 	if err != nil {
 		return err
