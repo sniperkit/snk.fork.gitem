@@ -1,10 +1,10 @@
 package gitem
 
 import (
+	"net/http"
 	"sort"
 
 	"github.com/google/go-github/github"
-	"golang.org/x/oauth2"
 )
 
 // ByRepoURL struct used to sort repositories by URL.
@@ -15,12 +15,7 @@ func (a ByRepoURL) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByRepoURL) Less(i, j int) bool { return *a[i].URL < *a[j].URL }
 
 // ListRepositoriesForOrg list all repos associated with the given organization.
-func ListRepositoriesForOrg(org, accessToken string) ([]*github.Repository, error) {
-	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: accessToken},
-	)
-	tc := oauth2.NewClient(oauth2.NoContext, ts)
-
+func ListRepositoriesForOrg(httpClient *http.Client, org string) ([]*github.Repository, error) {
 	opt := &github.RepositoryListByOrgOptions{
 		ListOptions: github.ListOptions{PerPage: 50},
 	}
@@ -29,7 +24,7 @@ func ListRepositoriesForOrg(org, accessToken string) ([]*github.Repository, erro
 	// okay for our purposes.
 
 	allRepos := []*github.Repository{}
-	client := github.NewClient(tc)
+	client := github.NewClient(httpClient)
 	for {
 		repos, resp, err := client.Repositories.ListByOrg(org, opt)
 		if err != nil {
@@ -50,9 +45,11 @@ func ListRepositoriesForOrg(org, accessToken string) ([]*github.Repository, erro
 }
 
 // ListRepositoriesForUser lists all repositories owned by the specified user.
-func ListRepositoriesForUser(user string) ([]*github.Repository, error) {
-	client := github.NewClient(nil)
-	opt := github.RepositoryListOptions{}
+func ListRepositoriesForUser(httpClient *http.Client, user string) ([]*github.Repository, error) {
+	client := github.NewClient(httpClient)
+	opt := github.RepositoryListOptions{
+		Type: "all",
+	}
 
 	allRepos := []*github.Repository{}
 	for {
