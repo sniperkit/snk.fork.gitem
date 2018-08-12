@@ -1,3 +1,8 @@
+/*
+Sniperkit-Bot
+- Status: analyzed
+*/
+
 package main
 
 import (
@@ -7,11 +12,12 @@ import (
 	"os"
 
 	"github.com/google/go-github/github"
-	"github.com/stxmendez/gitem"
 	"github.com/urfave/cli"
 	"golang.org/x/oauth2"
 	"gopkg.in/src-d/go-git.v4/plumbing/transport"
 	githttp "gopkg.in/src-d/go-git.v4/plumbing/transport/http"
+
+	"github.com/sniperkit/snk.fork.gitem"
 )
 
 func authArguments() []cli.Flag {
